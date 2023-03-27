@@ -12,6 +12,11 @@ router.use(fileUpload());
 router.get("/", async (req, res) => {
 	let videos = await readVideos();
 
+	//sort videos by recency, so newest videos appear at the top
+	videos.sort((a, b) => {
+		return b.timestamp - a.timestamp;
+	});
+
 	//only return necessary information
 	videos = videos.map((video) => {
 		return {
@@ -20,11 +25,6 @@ router.get("/", async (req, res) => {
 			channel: video.channel,
 			image: video.image,
 		};
-	});
-
-	//sort videos by recency, so newest videos appear at the top
-	videos.sort((a, b) => {
-		return a.timestamp - b.timestamp;
 	});
 
 	res.json(videos);
@@ -41,7 +41,7 @@ router.get("/:id", async (req, res) => {
 
 router.post("/", async (req, res) => {
 	if (req.files.length === 0) return res.status(400).end();
-	const id = await createVideo(req.files.image, body);
+	const id = await createVideo(req.files.image, req.body);
 
 	res.send(id);
 });
