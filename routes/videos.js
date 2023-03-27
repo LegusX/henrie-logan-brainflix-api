@@ -11,6 +11,8 @@ router.use(fileUpload());
 
 router.get("/", async (req, res) => {
 	let videos = await readVideos();
+
+	//only return necessary information
 	videos = videos.map((video) => {
 		return {
 			id: video.id,
@@ -19,41 +21,27 @@ router.get("/", async (req, res) => {
 			image: video.image,
 		};
 	});
+
+	//sort videos by recency, so newest videos appear at the top
+	videos.sort((a, b) => {
+		return a.timestamp - b.timestamp;
+	});
+
 	res.json(videos);
 });
 
 router.get("/:id", async (req, res) => {
 	const id = req.params.id;
 	const video = await getVideo(id);
+
 	if (video === null) {
 		res.status(404).end();
 	} else res.send(JSON.stringify(video));
 });
 
 router.post("/", async (req, res) => {
-	console.log("hi");
 	if (req.files.length === 0) return res.status(400).end();
-	console.log(req.files);
-
-	const videos = await readVideos();
-	console.log(req.body);
-
-	const id = uuid();
-	const fileEnding = req.files.image.name.split(".").pop();
-	const fileName = id + "." + fileEnding;
-
-	await writeFile("./public/images/" + fileName, req.files.image.data);
-
-	const video = new Video(
-		req.body.title,
-		req.body.description,
-		fileName,
-		id,
-		req.body.channel
-	);
-
-	videos.push(video);
-	await writeVideos(videos);
+	const id = await createVideo(req.files.image, body);
 
 	res.send(id);
 });
@@ -76,4 +64,25 @@ async function getVideo(id) {
 		if (videos[i].id === id) return videos[i];
 	}
 	return null;
+}
+
+async function createVideo(file, body) {
+	const videos = await readVideos();
+
+	const id = uuid();
+	const fileEnding = file.name.split(".").pop();
+	const fileName = id + "." + fileEnding;
+
+	await writeFile("./public/images/" + fileName, file.data);
+
+	const video = new Video(
+		body.title,
+		body.description,
+		fileName,
+		id,
+		body.channel
+	);
+
+	videos.push(video);
+	await writeVideos(videos);
 }
