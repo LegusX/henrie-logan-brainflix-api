@@ -85,4 +85,6 @@ async function createVideo(file, body) {
 
 	videos.push(video);
 	await writeVideos(videos);
+
+	return id;
 }
